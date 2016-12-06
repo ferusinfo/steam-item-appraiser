@@ -1,15 +1,12 @@
 const fs = require('fs');
-const path = require('path');
 
 const TradeOfferManager = require('steam-tradeoffer-manager');
 const SteamUser = require('steam-user');
 const SteamCommunity = require('steamcommunity');
 const SteamTotp = require('steam-totp');
-const shell = require('shelljs');
 
 const cfg = require('./config_parser');
-const log = require('./logging');
-		
+
 // price history settings
 var itemsArray = JSON.parse(fs.readFileSync('itemList.json')); // array of items to be requested
 var currency = 3; // 3 = euro
@@ -32,10 +29,10 @@ var accountTradeHandler = function (username, password, sharedSecret) {
 	});
 
 	client.on("loggedOn", function () {
-		log.winston.info("User " + (cfg.accountNames[this.steamID] || this.steamID) +
+		console.log("User " + (cfg.accountNames[this.steamID] || this.steamID) +
 			" successfully logged into Steam.");
 	});
-	
+
 	client.on('webSession', function (sessionID, cookies) {
 		manager.setCookies(cookies, function (err) {
 			if (err) {
@@ -61,10 +58,10 @@ var accountTradeHandler = function (username, password, sharedSecret) {
 					});
 				};
 			}, 1000 * i);
-		});	
+		});
 	});
 }
 
 for (i = 0; i < cfg.accountLoginInfos.length; i++) {
 	accountTradeHandler(cfg.accountLoginInfos[i][0], cfg.accountLoginInfos[i][1], cfg.accountLoginInfos[i][2]);
-}		
+}
