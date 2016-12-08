@@ -7,11 +7,10 @@ const SteamTotp = require('steam-totp');
 
 const cfg = require('./config_parser');
 
-// price history settings
-var itemsArray = JSON.parse(fs.readFileSync('itemList.json')); // array of items to be requested
-var currency = 3; // 3 = euro
-var appid = 730; // 730 = CS:GO
-var itemData = {};
+// Item Appraiser Settings
+var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
+var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
+var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2,
 
 var accountTradeHandler = function (username, password, sharedSecret) {
     var client = new SteamUser();
@@ -44,21 +43,34 @@ var accountTradeHandler = function (username, password, sharedSecret) {
 
         community.setCookies(cookies);
         community.startConfirmationChecker(50000, "identitySecret" + username);
+        
+        // note to self, move the function into external file maybe.
+        function updateIt () {
+            var itemData = {};
 
-        itemsArray.forEach(function (item, i) {
-            setTimeout(function (i) {
-                community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
-                    if (!err && response.statusCode == 200) itemData[item] = body;
-                });
-                // note that i hardcoded null at bottom of items array until i find logical solution
-                if (item === null) {
-                    fs.writeFile('itemHistory.json', JSON.stringify(itemData, null, 2), function (err) {
-                        if (err) throw err;
-                        console.log('Finished acquiring history');
+            itemsArray.forEach(function (item, i) {
+                setTimeout(function (i) {
+                    community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
+                        if (!err && response.statusCode == 200) itemData[item] = body;
                     });
-                };
-            }, 1000 * i);
-        });
+                    if ((Object.keys(itemData).length += 1) == itemsArray.length) {
+                        setTimeout(function () {
+                            fs.writeFile('itemHistory.json', (JSON.stringify(itemData, null, 2)), function (err) {
+                                if (err) throw err;
+                                console.log('Finished acquiring history for: ' + Object.keys(itemData).length + " items.");
+                            });
+                        }, 2000);
+                    };
+                }, 1000 * i);
+            });
+        };
+        
+        updateIt();
+
+        setInterval(function () {
+            console.log("Updating the database..");
+            updateIt();
+        }, 10000); // change depending on size of your array
     });
 }
 

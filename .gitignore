@@ -2,3 +2,4 @@ node_modules/
 .vscode/
 configGIT.json
 itemList.json
+itemHistory.json
