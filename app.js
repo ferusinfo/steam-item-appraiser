@@ -45,32 +45,31 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         community.startConfirmationChecker(50000, "identitySecret" + username);
         
         // note to self, move the function into external file maybe.
-        function updateIt () {
+        function updateIt() {
             var itemData = {};
 
             itemsArray.forEach(function (item, i) {
                 setTimeout(function (i) {
                     community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
                         if (!err && response.statusCode == 200) itemData[item] = body;
-                    });
-                    if ((Object.keys(itemData).length += 1) == itemsArray.length) {
-                        setTimeout(function () {
-                            fs.writeFile('itemHistory.json', (JSON.stringify(itemData, null, 2)), function (err) {
+                        if (Object.keys(itemData).length == itemsArray.length) {
+                            fs.writeFile('itemHistory.json', JSON.stringify(itemData, null, 2), function (err) {
                                 if (err) throw err;
                                 console.log('Finished acquiring history for: ' + Object.keys(itemData).length + " items.");
                             });
-                        }, 2000);
-                    };
+                        };
+                    });
                 }, 1000 * i);
             });
         };
-        
+    
         updateIt();
 
         setInterval(function () {
             console.log("Updating the database..");
             updateIt();
         }, 10000); // change depending on size of your array
+        
     });
 }
 
