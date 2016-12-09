@@ -10,7 +10,7 @@ const cfg = require('./config_parser');
 // Item Appraiser Settings
 var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
-var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2,
+var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
 
 var accountTradeHandler = function (username, password, sharedSecret) {
     var client = new SteamUser();
