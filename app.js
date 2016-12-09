@@ -11,6 +11,12 @@ const cfg = require('./config_parser');
 var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
+var writeFile = function (fileName, fileData, func) {
+    fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
+        if (err) throw err;
+        console.log('Finished acquiring history for: ' + Object.keys(fileData).length + ' items.');
+    });
+};
 
 var accountTradeHandler = function (username, password, sharedSecret) {
     var client = new SteamUser();
@@ -52,17 +58,12 @@ var accountTradeHandler = function (username, password, sharedSecret) {
                 setTimeout(function (i) {
                     community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
                         if (!err && response.statusCode == 200) itemData[item] = body;
-                        if (Object.keys(itemData).length == itemsArray.length) {
-                            fs.writeFile('itemHistory.json', JSON.stringify(itemData, null, 2), function (err) {
-                                if (err) throw err;
-                                console.log('Finished acquiring history for: ' + Object.keys(itemData).length + " items.");
-                            });
-                        };
+                        if (Object.keys(itemData).length == itemsArray.length) writeFile('itemHistory.json', itemData);
                     });
                 }, 1000 * i);
             });
         };
-    
+
         updateIt();
 
         setInterval(function () {
