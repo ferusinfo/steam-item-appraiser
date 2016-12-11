@@ -4,6 +4,7 @@ const TradeOfferManager = require('steam-tradeoffer-manager');
 const SteamUser = require('steam-user');
 const SteamCommunity = require('steamcommunity');
 const SteamTotp = require('steam-totp');
+const firebase = require('firebase');
 
 const cfg = require('./config_parser');
 
@@ -11,12 +12,10 @@ const cfg = require('./config_parser');
 var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
-var writeData = function (fileName, fileData, func) {
-    fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
-        if (err) throw err;
-        console.log('Finished acquiring data for: ' + Object.keys(fileData).length + ' items.');
-    });
-};
+
+firebase.initializeApp(cfg.firebaseConfig);
+var database = firebase.database();
+var ref = database.ref('CS:GO Data');
 
 var accountTradeHandler = function (username, password, sharedSecret) {
     var client = new SteamUser();
@@ -27,14 +26,11 @@ var accountTradeHandler = function (username, password, sharedSecret) {
     });
     var community = new SteamCommunity();
 
-    function getData() {
-        var itemData = {};
-
+    function getData () {
         itemsArray.forEach(function (item, i) {
             setTimeout(function (i) {
-                community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
-                    if (!err && response.statusCode == 200) itemData[item] = body;
-                    if (Object.keys(itemData).length == itemsArray.length) writeData('itemHistory.json', itemData);
+                community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function(err, response, body) {
+                    if (!err && response.statusCode == 200) ref.child(item).set(JSON.parse(body));
                 });
             }, 1000 * i);
         });
