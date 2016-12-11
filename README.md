@@ -1,6 +1,6 @@
 # Steam-Item-Appraiser
 
-Small NodeJS script which acquires steam market history for desired list of items, and writes them in a single JSON file.
+Small NodeJS script which acquires steam market history for desired list of items, and pushes them into database.
 
 ## Installation:
 * Node modules required: ```steam-tradeoffer-manager```, ```steam-user```, ```steamcommunity```, ```steam-totp```, ```fs```, ```firebase```.
