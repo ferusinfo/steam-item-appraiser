@@ -11,10 +11,10 @@ const cfg = require('./config_parser');
 var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
-var writeFile = function (fileName, fileData, func) {
+var writeData = function (fileName, fileData, func) {
     fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
         if (err) throw err;
-        console.log('Finished acquiring history for: ' + Object.keys(fileData).length + ' items.');
+        console.log('Finished acquiring data for: ' + Object.keys(fileData).length + ' items.');
     });
 };
 
@@ -26,6 +26,19 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         "language": "en"
     });
     var community = new SteamCommunity();
+
+    function getData() {
+        var itemData = {};
+
+        itemsArray.forEach(function (item, i) {
+            setTimeout(function (i) {
+                community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
+                    if (!err && response.statusCode == 200) itemData[item] = body;
+                    if (Object.keys(itemData).length == itemsArray.length) writeData('itemHistory.json', itemData);
+                });
+            }, 1000 * i);
+        });
+    };
 
     client.logOn({
         "accountName": username,
@@ -50,26 +63,12 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         community.setCookies(cookies);
         community.startConfirmationChecker(50000, "identitySecret" + username);
         
-        // note to self, move the function into external file maybe.
-        function updateIt() {
-            var itemData = {};
-
-            itemsArray.forEach(function (item, i) {
-                setTimeout(function (i) {
-                    community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
-                        if (!err && response.statusCode == 200) itemData[item] = body;
-                        if (Object.keys(itemData).length == itemsArray.length) writeFile('itemHistory.json', itemData);
-                    });
-                }, 1000 * i);
-            });
-        };
-
-        updateIt();
+        getData();
 
         setInterval(function () {
             console.log("Updating the database..");
-            updateIt();
-        }, 10000); // change depending on size of your array
+            getData();
+        }, 10000); // change depending on length of your array.
         
     });
 }
