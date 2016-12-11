@@ -10,4 +10,5 @@
     module.exports.configs = configs;
     module.exports.accountLoginInfos = configs["accounts"];
     module.exports.accountNames = configs["accountNames"];
+    module.exports.firebaseConfig = configs["firebaseConfig"];
 }());
