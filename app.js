@@ -9,7 +9,7 @@ const firebase = require('firebase');
 const cfg = require('./config_parser');
 
 // Item Appraiser Settings
-var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
+var itemsArray = JSON.parse(fs.readFileSync('itemListFULL.json')); // array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
 
@@ -26,15 +26,18 @@ var accountTradeHandler = function (username, password, sharedSecret) {
     });
     var community = new SteamCommunity();
 
-    function getData () {
+    function getData() {
         itemsArray.forEach(function (item, i) {
             setTimeout(function (i) {
                 community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function(err, response, body) {
-                    if (!err && response.statusCode == 200) ref.child(item).set(JSON.parse(body));
+                    if (!err && response.statusCode == 200) formatDB(JSON.parse(body).prices);
                 });
-            }, 1000 * i);
+            }, 1500 * i);
+            function formatDB(param) {
+                for (i = 0; i < param.length; i++) ref.child(item.split(".").join("***")).child(new Date(param[i][0]).getFullYear()).child(new Date(param[i][0]).getMonth()).child(new Date(param[i][0]).getDate()).set(param[i][1]);
+            }
         });
-    };
+    }
 
     client.logOn({
         "accountName": username,
@@ -64,7 +67,7 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         setInterval(function () {
             console.log("Updating the database..");
             getData();
-        }, 10000); // change depending on length of your array.
+        }, 9999999); // change depending on length of your array.
         
     });
 }
