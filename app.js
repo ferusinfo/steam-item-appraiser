@@ -8,7 +8,7 @@ const SteamTotp = require('steam-totp');
 const cfg = require('./config_parser');
 
 // Item Appraiser Settings
-var itemsArray = JSON.parse(fs.readFileSync('itemList.json'));// array of items to be requested
+var itemsArray = JSON.parse(fs.readFileSync('itemListFULL.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
 
@@ -16,15 +16,21 @@ var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oc
 var newMonth = new Date().getMonth();
 var year = new Date().getFullYear();
 var monthName = months[newMonth];
-
-var rgx2016 = new RegExp('Dec [0-9][0-9] 2016', 'g');
 var rgxDate = new RegExp(monthName +' [0-9][0-9] '+ year, 'g');
 
-var writeData = function (fileName, fileData, func) {
+function writeData(fileName, fileData, func) {
     fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
         if (err) throw err;
         console.log('Finished acquiring data for: ' + Object.keys(fileData).length + ' items.');
     });
+};
+
+function dateFilter(dataArr, objArr) {
+    for (i = 0; i < dataArr.length; i++) {
+        if (dataArr[i][0].match(rgxDate)) {
+            objArr.push(dataArr[i]);
+        }
+    }
 };
 
 var accountTradeHandler = function (username, password, sharedSecret) {
@@ -41,21 +47,11 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         itemsArray.forEach(function (item, i) {
             setTimeout(function (i) {
                 community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
-                    if (!err && response.statusCode == 200) {
-                        var arr = JSON.parse(body).prices;
-                        itemData[item] = [];
-                        filterIt(arr);
-                    };
-                    if (Object.keys(itemData).length == itemsArray.length) writeData('itemHistory.json', itemData);
+                    if (!err && response.statusCode == 200) dateFilter(JSON.parse(body).prices, itemData[item] = []);
+                    /*if (Object.keys(itemData).length == itemsArray.length) writeData("itemHistory.json", itemData);*/
+                    if (item == null) writeData("itemHistory.json", itemData);
                 });
-            }, 1000 * i);
-            function filterIt(arg) {
-                for (i = 0; i < arg.length; i++) {
-                    if (arg[i][0].match(rgxDate)) {
-                        itemData[item].push(arg[i]);
-                    }
-                }
-            }
+            }, 500 * i);
         });
     };
 
