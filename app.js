@@ -8,15 +8,15 @@ const SteamTotp = require('steam-totp');
 const cfg = require('./config_parser');
 
 // Item Appraiser Settings
-var itemsArray = JSON.parse(fs.readFileSync('itemListFULL.json'));// array of items to be requested
+var itemsArray = JSON.parse(fs.readFileSync('itemList2017.json'));// array of items to be requested
 var currency = 3; // 3 = euro (see: https://github.com/SteamRE/SteamKit/blob/master/Resources/SteamLanguage/enums.steamd#L696)
 var appid = 730; // 730 = CS:GO, 570 = DotA2, 440 = TF2
+var URL = `http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=`
 
 var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-var newMonth = new Date().getMonth();
+var thisMonth = new Date().getMonth();
 var year = new Date().getFullYear();
-var monthName = months[newMonth];
-var rgxDate = new RegExp(monthName +' [0-9][0-9] '+ year, 'g');
+var rgxDate = new RegExp(months[thisMonth] +' [0-9][0-9] '+ year, 'g');
 
 function writeData(fileName, fileData, func) {
     fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
@@ -42,17 +42,16 @@ var accountTradeHandler = function (username, password, sharedSecret) {
     });
     var community = new SteamCommunity();
 
-    function getData() {
+    function getData(arr) {
         var itemData = {};
-        itemsArray.forEach(function (item, i) {
+        arr.forEach(function (item, i) {
             setTimeout(function (i) {
-                community.request(`http://steamcommunity.com/market/pricehistory/?currency=${currency}&appid=${appid}&market_hash_name=${encodeURI(item)}`, function (err, response, body) {
+                community.request(URL + encodeURI(item), function (err, response, body) {
                     if (!err && response.statusCode == 200) dateFilter(JSON.parse(body).prices, itemData[item] = []);
-                    /*if (Object.keys(itemData).length == itemsArray.length) writeData("itemHistory.json", itemData);*/
-                    if (item == null) writeData("itemHistory.json", itemData);
+                    if (item == (arr[arr.length - 1])) writeData("itemHistory.json", itemData);
                 });
-            }, 500 * i);
-        });
+            }, 100 * i)
+        })
     };
 
     client.logOn({
@@ -78,11 +77,11 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         community.setCookies(cookies);
         community.startConfirmationChecker(50000, "identitySecret" + username);
         
-        getData();
+        getData(itemsArray);
 
         setInterval(function () {
             console.log("Updating the database..");
-            getData();
+            getData(itemsArray);
         }, 999999999); // change depending on length of your array.
         
     });
