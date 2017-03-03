@@ -17,6 +17,8 @@ var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oc
 var thisMonth = new Date().getMonth();
 var year = new Date().getFullYear();
 var rgxDate = new RegExp(months[thisMonth] +' [0-9][0-9] '+ year, 'g');
+var dash = "(Holo-Foil)";
+var slash = "(Holo/Foil)"
 
 function writeData(fileName, fileData, func) {
     fs.writeFile(fileName, JSON.stringify(fileData, null, 2), function (err) {
@@ -46,8 +48,8 @@ var accountTradeHandler = function (username, password, sharedSecret) {
         var itemData = {};
         arr.forEach(function (item, i) {
             setTimeout(function (i) {
-                community.request(URL + encodeURI(item), function (err, response, body) {
-                    if (!err && response.statusCode == 200) dateFilter(JSON.parse(body).prices, itemData[item] = []);
+                community.request(URL + encodeURIComponent(item), function (err, response, body) {
+                    if (!err && response.statusCode == 200) dateFilter(JSON.parse(body).prices, itemData[item.replace(dash, slash)] = []);
                     if (item == (arr[arr.length - 1])) writeData("itemHistory.json", itemData);
                 });
             }, 100 * i)
